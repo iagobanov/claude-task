@@ -21,9 +21,17 @@ git clone https://github.com/iagobanov/claude-task ~/.claude-task
 echo '[[ -r ~/.claude-task/ct.zsh ]] && source ~/.claude-task/ct.zsh' >> ~/.zshrc
 ```
 
-Reload your shell and run `ct --help`. Tasks land in `$CT_ROOT`
-(default `~/Projects/claude`); clones are looked for under `$CT_PROJECTS`
-(default `~/Projects`). Set either before sourcing if you want them elsewhere.
+Reload your shell and run `ct --help`. Everything tunable sits in the config
+block at the top of `ct.zsh` — tasks land in `$CT_ROOT` (default
+`~/Projects/claude`); clones are looked for under every path in `$CT_PROJECTS`
+(default `~/Projects`, checked at `<root>/<repo>` and `<root>/*/<repo>`), and the
+first entry is where `cta` clones to. Override before the source line; note
+`CT_PROJECTS` is an array:
+
+```zsh
+CT_PROJECTS=(~/work ~/oss)
+[[ -r ~/.claude-task/ct.zsh ]] && source ~/.claude-task/ct.zsh
+```
 
 ## The idea
 
@@ -39,13 +47,23 @@ what you learned.
 ```
 $CT_ROOT/
 ├── tasks/
-│   └── 2026-08-19-add-rate-limiting/
+│   └── add-rate-limiting/
 │       ├── NOTES.md      # survives everything
 │       └── scratch/      # throwaway
 └── worktrees/
     └── my-api/
         └── add-rate-limiting/   # the checkout, .task symlinks back to notes
 ```
+
+No date prefix on task directories — `ctls` sorts by mtime, so chronology is
+computed rather than baked into a name that goes stale the moment a task runs
+longer than a day.
+
+The seeded `NOTES.md` is a status doc written for a future session with no memory
+of this one: a one-line `Status`, the problem, what has happened so far, a section
+for facts that took real investigation (**Established, do not re-derive** — the one
+that earns its keep), open questions, tracking links, and a running note stream at
+the bottom that `ctn` appends to.
 
 ## Commands
 
@@ -83,10 +101,15 @@ A guess says which task it picked, so a wrong one is obvious immediately instead
 of after the note lands in the wrong file.
 
 `ct <slug>` is idempotent: re-running it reopens the same worktree and the same
-notes directory, including one opened on an earlier date.
+notes directory. Slugs are lowercased, so `ct PROJ-123` and `ct proj-123` are the
+same task.
 
 ## Notes
 
+- The file is two halves: a config block at the top that is yours to edit, and
+  the engine below the `SKELETON-SHARED-BELOW` marker, which is shared verbatim
+  with the author's workspace repos and republished from there. Suggest engine
+  changes by issue or PR here; config is per-machine by design.
 - **zsh only.** It leans on zsh globbing (`(N/om)`) throughout. A bash port would
   be a rewrite, not a patch.
 - It runs `claude` at the end of `ct`. Swap that line for your editor if you want
